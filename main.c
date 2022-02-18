@@ -29,19 +29,82 @@ size_t	ft_strlcpy(char *dst, const char *src, size_t dstsize)
 	return (j);
 }
 
+void	*ft_memcpy(void *dest, const void *src, size_t n)
+{
+	unsigned char		*ptr;
+	const unsigned char	*ptr2;
+
+	if (!dest && !src)
+		return (NULL);
+	ptr = (unsigned char *)dest;
+	ptr2 = (unsigned char *)src;
+	while (n-- > 0)
+		*(ptr++) = *(ptr2++);
+	return (dest);
+}
+
+char	*ft_strdup(const char *s1)
+{
+	char	*dest;
+
+	dest = (char *)malloc(sizeof(char) * ft_strlen(s1) + 1);
+	if (!dest)
+		return (NULL);
+	ft_memcpy(dest, s1, ft_strlen(s1));
+	*(dest + ft_strlen(s1)) = '\0';
+	return (dest);
+}
+
+size_t	ft_strlcat(char *dst, const char *src, size_t dstsize)
+{
+	size_t	dstl;
+	size_t	srcl;
+	size_t	i;
+
+	dstl = ft_strlen(dst);
+	srcl = ft_strlen(src);
+	i = dstl;
+	if (dstl >= dstsize)
+		return (dstsize + srcl);
+	while (dstl < dstsize - 1 && *src)
+		*(dst + dstl++) = *src++;
+	*(dst + dstl) = '\0';
+	return (i + srcl);
+}
+
+char	*ft_strjoin(char const *s1, char const *s2)
+{
+	char	*dest;
+	size_t	s1_len;
+	size_t	s2_len;
+
+	if (!s1 || !s2)
+		return (NULL);
+	s1_len = ft_strlen(s1);
+	s2_len = ft_strlen(s2);
+	dest = (char *)malloc(sizeof(char) * (s1_len + s2_len + 1));
+	if (!dest)
+		return (NULL);
+	ft_strlcpy(dest, s1, s1_len + 1);
+	ft_strlcat(&dest[s1_len], s2, s2_len + 1);
+	return (dest);
+}
+
 char *get_next_line(int fd)
 {
-	char *buf;
-	int i;
-	int nLocation;
-	ssize_t	a;
-	static char *intentoPrimeraLinea;
-	char *primeraLinea;
+	char		*buf;
+	int			i;
+	int			nLocation;
+	char		*intentoPrimeraLinea;
+	char		*primeraLinea;
+	int			contador;
+	size_t		a;
 
+	contador = 0;
 	i = 0;
 	nLocation = 0;
-	buf = (char *)malloc(BUFFER_SIZE*sizeof(char));
-	
+	buf = (char *)malloc((BUFFER_SIZE + 1)*sizeof(char));
+
 	if(fd == -1)
 	{
 		printf("No hay archivo\n");
@@ -54,32 +117,52 @@ char *get_next_line(int fd)
 	}
 	else
 	{
-		a = read(fd, buf, BUFFER_SIZE);
-		while(i < BUFFER_SIZE)
+		while(contador < 8)
 		{
-			if(buf[i] == '\n')
+			a = read(fd, buf, BUFFER_SIZE);		// si el a es 0, se a terminado el file, porq read no ha leido nada. *manejo de erroes*
+			while(i < BUFFER_SIZE)
 			{
-				printf("HAY UN BARRA ENE\n");
-				nLocation = i + 1;
+				if(buf[i] == '\n')
+				{
+					printf("HAY UN BARRA ENE\n");
+					nLocation = i + 1;
+					break;
+				}
+				i++;
+			}
+			i = 0;
+			if(nLocation > 0 && contador == 0)
+			{
+				ft_strlcpy(primeraLinea, buf, nLocation);
+				printf("Primera linea:\n%s\n", primeraLinea);
 				break;
 			}
-			i++;
+			else if(nLocation > 0 && contador != 0)
+			{
+				ft_strlcpy(primeraLinea, buf, nLocation);
+				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);
+				printf("Primera linea:\n%s\n", primeraLinea);
+				break;
+			}
+			else if(nLocation == 0 && contador == 0)
+			{
+				intentoPrimeraLinea = ft_strdup("");
+				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);
+				printf("Vamos con el first try:\n%s\n", intentoPrimeraLinea);
+			}
+			else if(nLocation == 0 && contador != 0)	
+			{
+				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);				//aqui tengo que mandar lo que hay en buf, a una memoria externa y que se concatene
+				printf("Intento primera linea:\n%s\n", intentoPrimeraLinea);
+			}
+			printf("Lo que hay guardado en buf:\n%s\n", buf);
+			printf("nlocation: %d\n", nLocation);
+			printf("----------------\n");
+			contador++;
 		}
-		if(nLocation > 0)
-		{
-			ft_strlcpy(primeraLinea, buf, nLocation);
-			printf("Primera linea:\n%s\n", primeraLinea);
-		}
-		else
-		{
-			intentoPrimeraLinea = buf;
-			printf("Intento primera linea:\n%s\n", intentoPrimeraLinea);
-		}
-		printf("Lo que hay guardado en buf:\n%s\n", buf);
-		printf("el size_t de read: %zd\n", a);
-		printf("nlocation: %d\n", nLocation);
-		return("primeraLinea");
 	}
+	free(buf);
+	return("hola");
 }
 
 int	main ()
