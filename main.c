@@ -90,6 +90,46 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	return (dest);
 }
 
+char	*ft_strchr(const char *s, int c)
+{
+	while (*s != (unsigned char)c && *s)
+		s++;
+	if (*s == (unsigned char)c)
+		return ((char *)s);
+	return (NULL);
+}
+
+char	*ft_substr(char const *s, unsigned int start, size_t len)
+{
+	char	*dest;
+
+	if (!s)
+		return (NULL);
+	if (start > ft_strlen(s))
+		return (ft_strdup(""));
+	if (ft_strlen(s) < len)
+		len = ft_strlen(s);
+	dest = (char *)malloc(sizeof(char) * len + 1);
+	if (!dest)
+		return (NULL);
+	ft_strlcpy(dest, &s[start], len + 1);
+	return (dest);
+}
+
+char	*ft_strtrim(const char *s1, char const *set)
+{
+	size_t	end;
+
+	if (!s1 || !set)
+		return (NULL);
+	while (*s1 != '\0' && ft_strchr(set, *s1))
+		s1++;
+	end = ft_strlen(s1);
+	while (end && ft_strchr(set, s1[end]))
+		end--;
+	return (ft_substr(s1, 0, end + 1));
+}
+
 char *get_next_line(int fd)
 {
 	char		*buf;
@@ -98,12 +138,17 @@ char *get_next_line(int fd)
 	char		*intentoPrimeraLinea;
 	char		*primeraLinea;
 	int		contador;
+	static char	*resto;
+	char		*temp;
 	size_t		a;
+	static int	hayresto;
 
 	contador = 0;
 	i = 0;
 	nLocation = 0;
 	buf = (char *)malloc((BUFFER_SIZE + 1)*sizeof(char));
+	intentoPrimeraLinea = ft_strdup("");
+	primeraLinea = ft_strdup("");
 
 	if(fd == -1)
 	{
@@ -119,6 +164,11 @@ char *get_next_line(int fd)
 	{
 		while(1)
 		{
+			if(hayresto == 1)
+			{
+				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, resto);
+				hayresto = 0;
+			}
 			a = read(fd, buf, BUFFER_SIZE);
 			if(a == 0)
 				return("");	// si el a es 0, se a terminado el file, porq read no ha leido nada. *manejo de erroes*
@@ -126,7 +176,6 @@ char *get_next_line(int fd)
 			{
 				if(buf[i] == '\n')
 				{
-					printf("HAY UN BARRA ENE\n");
 					nLocation = i + 1;
 					break;
 				}
@@ -135,35 +184,47 @@ char *get_next_line(int fd)
 			i = 0;
 			if(a != BUFFER_SIZE  && contador == 0 && nLocation == 0)
 			{
-				printf("el valor de a: %zu\n", a);
-				primeraLinea = ft_strdup("");
-				ft_strlcpy(primeraLinea, buf, a + 1);
-				printf("linea con barra cero:\n%s\n", primeraLinea);	//bro que no se te olvide sumar un \n al final de primeraLinea
+				ft_strlcpy(primeraLinea, buf, a + 1);	//bro que no se te olvide sumar un \n al final de primeraLinea
 				return(primeraLinea);
 			}
 			if(a != BUFFER_SIZE && contador != 0)
 			{
 				ft_strlcpy(primeraLinea, buf, a + 1);
 				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);	//aqui tmbn lo del barra ene
-				printf("linea con barra cero: \n%s\n", primeraLinea);
 				return(primeraLinea);
 			}
 			if(nLocation > 0 && contador == 0)
 			{
-				ft_strlcpy(primeraLinea, buf, nLocation);
-				printf("Primera linea:\n%s\n", primeraLinea);
+				if(ft_strlen(intentoPrimeraLinea) > 0)
+					ft_strlcpy(primeraLinea, intentoPrimeraLinea, a);	
+				intentoPrimeraLinea = ft_strtrim(buf, nLocation);
+				primeraLinea = ft_strjoin(primeraLinea, intentoPrimeraLinea);		//EL FALLO ESTA CUANDO CONCATENO ESTA BAINA
+				printf("Primera linea1:\n%s\n", primeraLinea);
+				if(nLocation < BUFFER_SIZE && a == BUFFER_SIZE)
+				{
+					ft_strlcpy(temp, buf, nLocation + 1);
+					resto = ft_strtrim(buf, temp);
+					printf("resto = %s\n", resto);
+					hayresto = 1;
+				}
 				break;
 			}
 			else if(nLocation > 0 && contador != 0)
 			{
+				if(ft_strlen(intentoPrimeraLinea) > 0)
+					primeraLinea = ft_strjoin(primeraLinea, intentoPrimeraLinea);
 				ft_strlcpy(primeraLinea, buf, nLocation);
 				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);
-				printf("Primera linea:\n%s\n", primeraLinea);
+				if(nLocation < BUFFER_SIZE && a == BUFFER_SIZE)
+				{
+					ft_strlcpy(temp, buf, nLocation + 1);
+					resto = ft_strtrim(buf, temp);
+					hayresto = 1;
+				}
 				break;
 			}
 			else if(nLocation == 0 && contador == 0)
 			{
-				intentoPrimeraLinea = ft_strdup("");
 				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);
 				printf("Vamos con el first try:\n%s\n", intentoPrimeraLinea);
 			}
@@ -177,7 +238,6 @@ char *get_next_line(int fd)
 			printf("a = %zu\n", a);
 			printf("----------------\n");
 			contador++;
-			sleep(2);
 		}
 	}
 	free(buf);
@@ -188,7 +248,9 @@ int	main ()
 {
 	int fd;
 
-	fd = open("/Users/jonelorriaga/programacion/42/gnl/text2.txt", O_RDONLY);
+	fd = open("/Users/jonelorriaga/programacion/42/gnl/text.txt", O_RDONLY);
+	get_next_line(fd);
+	get_next_line(fd);
 	get_next_line(fd);
 	return (0);
 }
