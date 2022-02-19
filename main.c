@@ -93,11 +93,11 @@ char	*ft_strjoin(char const *s1, char const *s2)
 char *get_next_line(int fd)
 {
 	char		*buf;
-	int			i;
-	int			nLocation;
+	int		i;
+	int		nLocation;
 	char		*intentoPrimeraLinea;
 	char		*primeraLinea;
-	int			contador;
+	int		contador;
 	size_t		a;
 
 	contador = 0;
@@ -117,9 +117,11 @@ char *get_next_line(int fd)
 	}
 	else
 	{
-		while(contador < 8)
+		while(1)
 		{
-			a = read(fd, buf, BUFFER_SIZE);		// si el a es 0, se a terminado el file, porq read no ha leido nada. *manejo de erroes*
+			a = read(fd, buf, BUFFER_SIZE);
+			if(a == 0)
+				return("");	// si el a es 0, se a terminado el file, porq read no ha leido nada. *manejo de erroes*
 			while(i < BUFFER_SIZE)
 			{
 				if(buf[i] == '\n')
@@ -131,6 +133,21 @@ char *get_next_line(int fd)
 				i++;
 			}
 			i = 0;
+			if(a != BUFFER_SIZE  && contador == 0 && nLocation == 0)
+			{
+				printf("el valor de a: %zu\n", a);
+				primeraLinea = ft_strdup("");
+				ft_strlcpy(primeraLinea, buf, a + 1);
+				printf("linea con barra cero:\n%s\n", primeraLinea);	//bro que no se te olvide sumar un \n al final de primeraLinea
+				return(primeraLinea);
+			}
+			if(a != BUFFER_SIZE && contador != 0)
+			{
+				ft_strlcpy(primeraLinea, buf, a + 1);
+				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);	//aqui tmbn lo del barra ene
+				printf("linea con barra cero: \n%s\n", primeraLinea);
+				return(primeraLinea);
+			}
 			if(nLocation > 0 && contador == 0)
 			{
 				ft_strlcpy(primeraLinea, buf, nLocation);
@@ -152,13 +169,15 @@ char *get_next_line(int fd)
 			}
 			else if(nLocation == 0 && contador != 0)	
 			{
-				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);				//aqui tengo que mandar lo que hay en buf, a una memoria externa y que se concatene
+				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);
 				printf("Intento primera linea:\n%s\n", intentoPrimeraLinea);
 			}
 			printf("Lo que hay guardado en buf:\n%s\n", buf);
 			printf("nlocation: %d\n", nLocation);
+			printf("a = %zu\n", a);
 			printf("----------------\n");
 			contador++;
+			sleep(2);
 		}
 	}
 	free(buf);
@@ -169,7 +188,7 @@ int	main ()
 {
 	int fd;
 
-	fd = open("/Users/jelorria/cursus/get_next_line/text.txt", O_RDONLY);
+	fd = open("/Users/jonelorriaga/programacion/42/gnl/text2.txt", O_RDONLY);
 	get_next_line(fd);
 	return (0);
 }
