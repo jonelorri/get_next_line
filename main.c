@@ -127,7 +127,7 @@ char	*ft_strtrim(const char *s1, char const *set)
 	end = ft_strlen(s1);
 	while (end && ft_strchr(set, s1[end]))
 		end--;
-	return (ft_substr(s1, 0, end + 1));
+	return (ft_substr(s1, 0, end + 2));
 }
 
 char *get_next_line(int fd)
@@ -181,63 +181,52 @@ char *get_next_line(int fd)
 				}
 				i++;
 			}
-			i = 0;
 			if(a != BUFFER_SIZE  && contador == 0 && nLocation == 0)
 			{
-				ft_strlcpy(primeraLinea, buf, a + 1);	//bro que no se te olvide sumar un \n al final de primeraLinea
-				return(primeraLinea);
-			}
-			if(a != BUFFER_SIZE && contador != 0)
+				ft_strlcpy(primeraLinea, buf, a + 1);	//bro tengo un fallo no se donde
+				return(primeraLinea);			//de que si pongo un buf heavy (500 o asi) me hace mal
+			}						//será porque pilla dos \n y movidas
+			else if(a != BUFFER_SIZE && contador != 0)
 			{
 				ft_strlcpy(primeraLinea, buf, a + 1);
-				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);	//aqui tmbn lo del barra ene
+				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);
 				return(primeraLinea);
 			}
-			if(nLocation > 0 && contador == 0)
+			else if(nLocation > 0 && contador == 0)
 			{
+				ft_strlcpy(primeraLinea, buf, nLocation);
 				if(ft_strlen(intentoPrimeraLinea) > 0)
-					ft_strlcpy(primeraLinea, intentoPrimeraLinea, a);	
-				intentoPrimeraLinea = ft_strtrim(buf, nLocation);
-				primeraLinea = ft_strjoin(primeraLinea, intentoPrimeraLinea);		//EL FALLO ESTA CUANDO CONCATENO ESTA BAINA
-				printf("Primera linea1:\n%s\n", primeraLinea);
+					primeraLinea = ft_strjoin(resto, primeraLinea);
+				i = ft_strlen(primeraLinea);
+				primeraLinea[i] = '\n';
+				printf("PRIMERA LINEA 1:\n%s", primeraLinea);
 				if(nLocation < BUFFER_SIZE && a == BUFFER_SIZE)
 				{
 					ft_strlcpy(temp, buf, nLocation + 1);
 					resto = ft_strtrim(buf, temp);
-					printf("resto = %s\n", resto);
 					hayresto = 1;
 				}
-				break;
+				return(primeraLinea);
 			}
 			else if(nLocation > 0 && contador != 0)
 			{
-				if(ft_strlen(intentoPrimeraLinea) > 0)
-					primeraLinea = ft_strjoin(primeraLinea, intentoPrimeraLinea);
-				ft_strlcpy(primeraLinea, buf, nLocation);
-				primeraLinea = ft_strjoin(intentoPrimeraLinea, primeraLinea);
+				ft_strlcpy(temp, buf, nLocation + 1);
+				primeraLinea = ft_strjoin(intentoPrimeraLinea, temp);
+				printf("PRIMERA LINEA 2 = \n%s", primeraLinea);
+				
 				if(nLocation < BUFFER_SIZE && a == BUFFER_SIZE)
 				{
-					ft_strlcpy(temp, buf, nLocation + 1);
 					resto = ft_strtrim(buf, temp);
 					hayresto = 1;
 				}
-				break;
+				return(primeraLinea);
 			}
 			else if(nLocation == 0 && contador == 0)
-			{
 				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);
-				printf("Vamos con el first try:\n%s\n", intentoPrimeraLinea);
-			}
 			else if(nLocation == 0 && contador != 0)	
-			{
 				intentoPrimeraLinea = ft_strjoin(intentoPrimeraLinea, buf);
-				printf("Intento primera linea:\n%s\n", intentoPrimeraLinea);
-			}
-			printf("Lo que hay guardado en buf:\n%s\n", buf);
-			printf("nlocation: %d\n", nLocation);
-			printf("a = %zu\n", a);
-			printf("----------------\n");
 			contador++;
+			i = 0;
 		}
 	}
 	free(buf);
@@ -249,6 +238,8 @@ int	main ()
 	int fd;
 
 	fd = open("/Users/jonelorriaga/programacion/42/gnl/text.txt", O_RDONLY);
+	get_next_line(fd);
+	get_next_line(fd);
 	get_next_line(fd);
 	get_next_line(fd);
 	get_next_line(fd);
